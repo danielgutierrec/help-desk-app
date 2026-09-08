@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/HelpDeskApp.API/HelpDeskApp.API.csproj" />
+    <Project Path="src/HelpDeskApp.Core/HelpDeskApp.Core.csproj" />
+    <Project Path="src/HelpDeskApp.Infrastructure/HelpDeskApp.Infrastructure.csproj" />
+  </Folder>
+</Solution>
