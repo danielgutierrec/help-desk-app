@@ -1,7 +1,9 @@
 using HelpDeskApp.Core.Interfaces;
 using HelpDeskApp.Infrastructure.Data;
+using HelpDeskApp.Infrastructure.Identity;
 using HelpDeskApp.Infrastructure.Repositories;
 using HelpDeskApp.Infrastructure.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +19,10 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
-        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddIdentityCore<ApplicationUser>()
+            .AddRoles<IdentityRole<Guid>>()
+            .AddEntityFrameworkStores<AppDbContext>();
+
         services.AddScoped<ITicketRepository, TicketRepository>();
         services.AddScoped<IEmailThreadRepository, EmailThreadRepository>();
 

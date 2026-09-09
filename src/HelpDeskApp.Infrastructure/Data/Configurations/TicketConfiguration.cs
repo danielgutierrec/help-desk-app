@@ -1,4 +1,5 @@
 using HelpDeskApp.Core.Entities;
+using HelpDeskApp.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,7 +17,7 @@ public class TicketConfiguration : IEntityTypeConfiguration<Ticket>
             .HasForeignKey(t => t.ThreadId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(t => t.AssignedTo)
+        builder.HasOne<ApplicationUser>()
             .WithMany()
             .HasForeignKey(t => t.AssignedToId)
             .OnDelete(DeleteBehavior.SetNull)

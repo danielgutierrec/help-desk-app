@@ -8,7 +8,6 @@ public class Ticket
     public Guid ThreadId { get; set; }
     public EmailThread Thread { get; set; } = null!;
     public Guid? AssignedToId { get; set; }
-    public User? AssignedTo { get; set; }
     public TicketCategory Category { get; set; }
     public TicketStatus Status { get; set; }
     public string AiSummary { get; set; } = string.Empty;

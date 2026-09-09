@@ -1,7 +1,7 @@
-using HelpDeskApp.Core.Entities;
 using HelpDeskApp.Core.Enums;
-using HelpDeskApp.Core.Interfaces;
+using HelpDeskApp.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,9 +13,9 @@ public class DatabaseSeeder(IServiceProvider services, ILogger<DatabaseSeeder> l
     public async Task StartAsync(CancellationToken ct)
     {
         using var scope = services.CreateScope();
-        var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-        if (await userRepo.AnyAsync(ct))
+        if (await userManager.Users.AnyAsync(ct))
             return;
 
         var email = Environment.GetEnvironmentVariable("ADMIN_EMAIL");
@@ -27,18 +27,22 @@ public class DatabaseSeeder(IServiceProvider services, ILogger<DatabaseSeeder> l
             return;
         }
 
-        var admin = new User
+        var admin = new ApplicationUser
         {
             Id = Guid.NewGuid(),
             Name = "Admin",
             Email = email,
+            UserName = email,
             Role = UserRole.Admin
         };
 
-        admin.PasswordHash = new PasswordHasher<User>().HashPassword(admin, password);
+        var result = await userManager.CreateAsync(admin, password);
 
-        await userRepo.AddAsync(admin, ct);
-        logger.LogInformation("Admin account seeded for {Email}.", email);
+        if (!result.Succeeded)
+            logger.LogError("Admin seed failed: {Errors}",
+                string.Join("; ", result.Errors.Select(e => e.Description)));
+        else
+            logger.LogInformation("Admin account seeded for {Email}.", email);
     }
 
     public Task StopAsync(CancellationToken ct) => Task.CompletedTask;
