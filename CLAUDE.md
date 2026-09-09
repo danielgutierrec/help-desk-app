@@ -16,8 +16,9 @@ Run from the repo root unless otherwise noted.
 # Build the whole solution
 dotnet build HelpDeskApp.slnx
 
-# Run the API (http only, port 5112)
-dotnet run --project src/HelpDeskApp.API --launch-profile http
+# Run the API (http only, port 5112) — ADMIN_EMAIL/ADMIN_PASSWORD seed the first admin on an empty DB
+ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=YourPassword123! \
+  dotnet run --project src/HelpDeskApp.API --launch-profile http
 
 # Add an EF Core migration (run from repo root; startup project is API)
 dotnet ef migrations add <MigrationName> \
@@ -58,17 +59,25 @@ frontend/                     # React 19 + TypeScript SPA (Vite)
 
 ### Key layers
 
-**`HelpDeskApp.Core`** — entities (`Ticket`, `User`, `EmailThread`), enums (`TicketStatus`, `TicketCategory`, `UserRole`), repository interfaces (`ITicketRepository`, `IUserRepository`, `IEmailThreadRepository`), service interfaces (`IGmailService`, `IAiService`). No EF, no HTTP references allowed here.
+**`HelpDeskApp.Core`** — entities (`Ticket`, `EmailThread`), enums (`TicketStatus`, `TicketCategory`, `UserRole`), repository interfaces (`ITicketRepository`, `IEmailThreadRepository`), service interfaces (`IGmailService`, `IAiService`). No EF, no HTTP references allowed here. `User` entity and `IUserRepository` have been retired — user management goes through ASP.NET Core Identity.
 
-**`HelpDeskApp.Infrastructure`** — `AppDbContext` (Npgsql/PostgreSQL), `IEntityTypeConfiguration<T>` mapping classes, repository implementations, `GmailService` (Google.Apis.Gmail.v1), `AiService` (Anthropic.SDK). A mock `GmailService` toggled by environment variable is used for local dev before OAuth is configured.
+**`HelpDeskApp.Infrastructure`** — `AppDbContext` (extends `IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>`, Npgsql/PostgreSQL), `ApplicationUser : IdentityUser<Guid>` (adds `Name` and `Role` properties) in `Identity/`, `IEntityTypeConfiguration<T>` mapping classes, repository implementations (`TicketRepository`, `EmailThreadRepository`), `DatabaseSeeder : IHostedService`. `GmailService` and `AiService` packages are installed (`Google.Apis.Gmail.v1`, `Anthropic.SDK`) but not yet implemented.
 
-**`HelpDeskApp.API`** — controller-based (not Minimal APIs), JWT bearer auth via `Microsoft.AspNetCore.Authentication.JwtBearer`, role-based `[Authorize]` attributes. `Microsoft.EntityFrameworkCore.Design` is here (not in Infrastructure) so `dotnet ef` can find the design-time factory. HTTPS redirect is disabled in `Development` environment.
+**`HelpDeskApp.API`** — controller-based (not Minimal APIs), JWT bearer auth via `Microsoft.AspNetCore.Authentication.JwtBearer` with `MapInboundClaims = false` (claim names in `ClaimsPrincipal` match JWT directly: `sub`, `email`, `role`), `TokenService` for JWT generation, `AppDbContextFactory` for `dotnet ef` CLI. HTTPS redirect is disabled in `Development` environment.
 
 **`frontend/`** — Vite dev server proxies all `/api/*` requests to `http://localhost:5112`, so no CORS configuration is needed during development. Tailwind CSS v4 is loaded via the `@tailwindcss/vite` plugin (no `tailwind.config.js`).
 
 ### Auth model
 
-Two roles: `Admin` and `Agent`. Admin account is database-seeded on first run from environment variables. Admin can create Agent accounts; there is no self-registration. JWTs carry `userId`, `email`, and `role` claims.
+Two roles: `Admin` and `Agent`. `Admin` account is database-seeded on first run via `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables (uses `UserManager<ApplicationUser>.CreateAsync`). Admin can create Agent accounts; there is no self-registration. JWTs carry `sub` (user GUID), `email`, and `role` claims, signed with HMAC-SHA256, 8-hour expiry. JWT config keys: `Jwt:Key`, `Jwt:Issuer`, `Jwt:Audience` — override `Jwt__Key` via environment variable in production, never commit a real key.
+
+### Implemented endpoints
+
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| GET | `/api/health` | none | Health check |
+| POST | `/api/auth/login` | none | `{email, password}` → `{token, email, role}` |
+| GET | `/api/auth/me` | Bearer | Returns `{id, email, role}` from JWT claims |
 
 ### Ticket lifecycle
 
