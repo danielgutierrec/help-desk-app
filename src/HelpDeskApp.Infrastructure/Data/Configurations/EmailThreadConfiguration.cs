@@ -13,7 +13,7 @@ public class EmailThreadConfiguration : IEntityTypeConfiguration<EmailThread>
         builder.Property(e => e.GmailThreadId).IsRequired().HasMaxLength(256);
         builder.HasIndex(e => e.GmailThreadId).IsUnique();
         builder.Property(e => e.Subject).IsRequired().HasMaxLength(1000);
-        builder.Property(e => e.SenderEmail).IsRequired().HasMaxLength(256);
+        builder.Property(e => e.SenderEmail).IsRequired().HasMaxLength(300);
         builder.Property(e => e.SenderName).IsRequired().HasMaxLength(200);
         builder.Property(e => e.Body).IsRequired();
         builder.Property(e => e.ReceivedAt).IsRequired();
