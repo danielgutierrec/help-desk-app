@@ -1,25 +1,32 @@
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using HelpDeskApp.API.Services;
 using HelpDeskApp.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HelpDeskApp.API.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(UserManager<ApplicationUser> userManager, TokenService tokenService)
+public class AuthController(
+    UserManager<ApplicationUser> userManager,
+    SignInManager<ApplicationUser> signInManager,
+    TokenService tokenService)
     : ControllerBase
 {
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var user = await userManager.FindByEmailAsync(request.Email);
         if (user is null)
             return Unauthorized();
 
-        if (!await userManager.CheckPasswordAsync(user, request.Password))
+        var result = await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+        if (!result.Succeeded)
             return Unauthorized();
 
         var token = tokenService.GenerateToken(user);
@@ -37,5 +44,7 @@ public class AuthController(UserManager<ApplicationUser> userManager, TokenServi
     }
 }
 
-public record LoginRequest(string Email, string Password);
+public record LoginRequest(
+    [Required][EmailAddress] string Email,
+    [Required][StringLength(128, MinimumLength = 1)] string Password);
 public record LoginResponse(string Token, string Email, string Role);
