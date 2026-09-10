@@ -9,7 +9,7 @@ export default function HomePage() {
       <NavBar />
       <main className="flex-1 flex flex-col items-center justify-center gap-2">
         <h1 className="text-2xl font-semibold text-gray-800">
-          Welcome, {user?.email}
+          Welcome, {user?.name}
         </h1>
         <p className="text-gray-500 text-sm">Ticket queue coming soon.</p>
       </main>

@@ -4,6 +4,7 @@ import api from '../api/client'
 interface AuthUser {
   id: string
   email: string
+  name: string
   role: string
 }
 
@@ -21,6 +22,7 @@ function decodeJwtPayload(token: string): AuthUser {
   return {
     id: payload.sub,
     email: payload.email,
+    name: payload.name ?? payload.email,
     role: payload.role,
   }
 }

@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 
 export default function NavBar() {
@@ -12,7 +12,14 @@ export default function NavBar() {
 
   return (
     <nav className="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-white">
-      <span className="font-semibold text-gray-800 text-lg">HelpDesk</span>
+      <div className="flex items-center gap-6">
+        <Link to="/" className="font-semibold text-gray-800 text-lg">HelpDesk</Link>
+        {user?.role === 'Admin' && (
+          <Link to="/users" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+            Users
+          </Link>
+        )}
+      </div>
       <div className="flex items-center gap-4">
         <div className="text-right">
           <p className="text-sm font-medium text-gray-800">{user?.email}</p>
