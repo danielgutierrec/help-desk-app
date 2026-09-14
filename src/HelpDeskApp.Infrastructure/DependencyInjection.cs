@@ -19,11 +19,13 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
+        var maxFailedAttempts = configuration.GetValue<int?>("Identity:Lockout:MaxFailedAccessAttempts") ?? 5;
+        var lockoutMinutes = configuration.GetValue<int?>("Identity:Lockout:LockoutMinutes") ?? 15;
         services.AddIdentityCore<ApplicationUser>(options =>
             {
                 options.Password.RequiredLength = 12;
-                options.Lockout.MaxFailedAccessAttempts = 5;
-                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.MaxFailedAccessAttempts = maxFailedAttempts;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(lockoutMinutes);
             })
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<AppDbContext>();
