@@ -24,11 +24,12 @@ public static class DependencyInjection
         services.AddControllers();
         services.AddScoped<SignInManager<ApplicationUser>>();
 
+        var loginPermitLimit = configuration.GetValue<int?>("RateLimit:LoginPermitLimit") ?? 5;
         services.AddRateLimiter(options =>
         {
             options.AddFixedWindowLimiter("login", o =>
             {
-                o.PermitLimit = 5;
+                o.PermitLimit = loginPermitLimit;
                 o.Window = TimeSpan.FromMinutes(1);
                 o.QueueLimit = 0;
             });

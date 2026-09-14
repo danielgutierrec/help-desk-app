@@ -1,0 +1,66 @@
+#!/bin/sh
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+CLAUDE="/Users/daniel.gutierrezc/.local/bin/claude"
+
+# ── 1. Branch guard ──────────────────────────────────────────────────────────
+BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null || echo 'DETACHED')"
+if [ "$BRANCH" = "main" ]; then
+  echo "ERROR: Direct commits to 'main' are blocked." >&2
+  echo "  Create a feature branch:  git checkout -b feat/your-change" >&2
+  exit 1
+fi
+
+# ── 2. Collect staged files ──────────────────────────────────────────────────
+STAGED=$(git diff --cached --name-only)
+
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+# ── 3. Relevance check — skip Claude if no backend or frontend files staged ──
+RELEVANT=$(printf '%s\n' "$STAGED" | grep -E '(\.cs$|\.csproj$|\.slnx$|^frontend/)' || true)
+if [ -z "$RELEVANT" ]; then
+  exit 0
+fi
+
+# ── 4. Claude availability check — fail open with warning ───────────────────
+if [ ! -x "$CLAUDE" ]; then
+  echo "WARNING: Claude CLI not found at $CLAUDE — skipping CI checks." >&2
+  exit 0
+fi
+
+# ── 5. Invoke Claude non-interactively ──────────────────────────────────────
+PROMPT="Read .claude/skills/pre-commit-ci/SKILL.md and follow its instructions exactly.
+
+Staged files:
+${STAGED}"
+
+CLAUDE_OUTPUT=$(
+  cd "$REPO_ROOT" && \
+  "$CLAUDE" -p "$PROMPT" \
+    --bare \
+    --allowedTools "Bash" \
+    --add-dir "$REPO_ROOT" \
+    2>&1
+)
+
+# ── 6. Parse sentinel from last line ────────────────────────────────────────
+LAST_LINE=$(printf '%s' "$CLAUDE_OUTPUT" | tail -n 1)
+
+if printf '%s' "$LAST_LINE" | grep -q "^CI_PASS$"; then
+  exit 0
+elif printf '%s' "$LAST_LINE" | grep -q "^CI_FAIL:"; then
+  REASON=$(printf '%s' "$LAST_LINE" | sed 's/^CI_FAIL: //')
+  echo "" >&2
+  echo "Pre-commit CI failed: $REASON" >&2
+  echo "" >&2
+  echo "---- Claude output ----" >&2
+  printf '%s\n' "$CLAUDE_OUTPUT" >&2
+  exit 1
+else
+  echo "Pre-commit CI: unexpected output from Claude (no CI_PASS/CI_FAIL sentinel)." >&2
+  printf '%s\n' "$CLAUDE_OUTPUT" >&2
+  exit 1
+fi
