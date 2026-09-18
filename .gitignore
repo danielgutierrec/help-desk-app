@@ -26,3 +26,6 @@ frontend/.vite/
 # Rider / VS Code
 .idea/
 .vscode/
+
+# Playwright / e2e
+.playwright-mcp

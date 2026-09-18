@@ -1,0 +1,52 @@
+### Variables — fill in @token after running Login
+@base = http://localhost:5112
+@token = <paste_token_here>
+
+### 1. Login (get token)
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "YourPassword123!"
+}
+
+### 2. GET queue — all NeedsReview tickets
+GET {{base}}/api/tickets
+Authorization: Bearer {{token}}
+
+### 3. GET ticket detail
+GET {{base}}/api/tickets/b1b2c3d4-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}
+
+### 4. PATCH draft — save edited reply
+PATCH {{base}}/api/tickets/b1b2c3d4-0000-0000-0000-000000000001/draft
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "finalReply": "Dear Alice, we have resolved your login issue. Please try logging in now."
+}
+
+### 5. POST send — mark ticket as Sent
+POST {{base}}/api/tickets/b1b2c3d4-0000-0000-0000-000000000001/send
+Authorization: Bearer {{token}}
+
+### 6. GET queue again — ticket above should be gone (Sent)
+GET {{base}}/api/tickets
+Authorization: Bearer {{token}}
+
+### 7. GET sent ticket — status should be Sent
+GET {{base}}/api/tickets/b1b2c3d4-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}
+
+### 8. POST send again — should return 409 Conflict
+POST {{base}}/api/tickets/b1b2c3d4-0000-0000-0000-000000000001/send
+Authorization: Bearer {{token}}
+
+### 9. GET unknown ticket — should return 404
+GET {{base}}/api/tickets/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### 10. No token — should return 401
+GET {{base}}/api/tickets
