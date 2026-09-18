@@ -1,3 +1,4 @@
+using HelpDeskApp.Core.Entities;
 using HelpDeskApp.Core.Enums;
 using HelpDeskApp.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -11,15 +12,25 @@ public class TicketsController(ITicketRepository tickets) : ApiControllerBase
     public async Task<IActionResult> GetQueue(CancellationToken ct)
     {
         var list = await tickets.GetByStatusAsync(TicketStatus.NeedsReview, ct);
-        return Ok(list.Select(t => new TicketSummaryDto(
-            t.Id,
-            t.Thread.Subject,
-            t.Thread.SenderEmail,
-            t.Thread.SenderName,
-            t.Category.ToString(),
-            t.AiSummary,
-            t.CreatedAt)));
+        return Ok(list.Select(ToSummary));
     }
+
+    [HttpGet("sent")]
+    public async Task<IActionResult> GetSent(CancellationToken ct)
+    {
+        var list = await tickets.GetByStatusAsync(TicketStatus.Sent, ct);
+        return Ok(list.Select(ToSummary));
+    }
+
+    private static TicketSummaryDto ToSummary(Ticket t) => new(
+        t.Id,
+        t.Thread.Subject,
+        t.Thread.SenderEmail,
+        t.Thread.SenderName,
+        t.Category.ToString(),
+        t.AiSummary,
+        t.CreatedAt,
+        t.SentAt);
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
@@ -77,7 +88,8 @@ public record TicketSummaryDto(
     string SenderName,
     string Category,
     string AiSummary,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? SentAt);
 
 public record TicketDetailDto(
     Guid Id,

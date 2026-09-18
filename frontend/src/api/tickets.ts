@@ -8,6 +8,7 @@ export interface TicketSummary {
   category: string
   aiSummary: string
   createdAt: string
+  sentAt: string | null
 }
 
 export interface TicketDetail {
@@ -28,6 +29,11 @@ export interface TicketDetail {
 
 export async function fetchQueue(): Promise<TicketSummary[]> {
   const { data } = await api.get<TicketSummary[]>('/api/tickets')
+  return data
+}
+
+export async function fetchSentTickets(): Promise<TicketSummary[]> {
+  const { data } = await api.get<TicketSummary[]>('/api/tickets/sent')
   return data
 }
 
