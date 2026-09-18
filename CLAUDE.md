@@ -27,7 +27,10 @@ Run from the repo root unless otherwise noted.
 # Build the whole solution
 dotnet build HelpDeskApp.slnx
 
-# Run the API (http only, port 5112) — ADMIN_EMAIL/ADMIN_PASSWORD seed the first admin on an empty DB
+# Run the API (http only, port 5112)
+# CRITICAL: Always clear zombie processes on port 5112 first. 
+# NEVER use long 'sleep' commands to monitor logs. Launch in background and verify 'ps' immediately.
+kill -9 \$(lsof -t -i:5112) 2>/dev/null || true
 ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=YourPassword123! \
   dotnet run --project src/HelpDeskApp.API --launch-profile http
 
@@ -47,7 +50,11 @@ dotnet ef database update \
 ```bash
 cd frontend
 
-npm run dev      # dev server on http://localhost:5173
+# Run dev server on http://localhost:5173 (or 5174 for E2E)
+# CRITICAL: Clear zombie processes on frontend ports before running.
+kill -9 \$(lsof -t -i:5173 -i:5174) 2>/dev/null || true
+npm run dev      
+
 npm run build    # TypeScript check + production build
 npm run lint     # oxlint
 ```
@@ -58,6 +65,9 @@ Run from `e2e/`. The `webServer` config starts the API and Vite automatically.
 
 ```bash
 cd e2e
+
+# CRITICAL: Always clear E2E ports (5174 for Frontend, 5113 for API) before starting Playwright
+kill -9 \$(lsof -t -i:5174 -i:5113) 2>/dev/null || true
 
 npx playwright test                        # run all tests (headless)
 npx playwright test tests/foo.spec.ts      # run a single file
